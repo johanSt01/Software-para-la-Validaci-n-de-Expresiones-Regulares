@@ -43,12 +43,12 @@ def analisisLexico(expresion_regular: str):
     return True  # Retorna True si todos los tokens son válidos
 
 
-
-#hacer el analisis sintactico a la expresion
+#analizar que el orden de la expresion tenga el orden correcto
 def analisisSintactico(expresion_regular: str) -> bool:
     """
     Realizar el análisis sintáctico a la expresión, asegurando que sigue una sintaxis
-    establecida mediante el uso de un autómata con las reglas especificadas.
+    establecida mediante el uso de un autómata con las reglas especificadas, incluyendo
+    la validación de rangos con el carácter '-' dentro de llaves.
     
     Parametros:
     - expresion_regular (str): La expresión regular a analizar.
@@ -76,7 +76,7 @@ def analisisSintactico(expresion_regular: str) -> bool:
                 print(f"Error sintáctico: carácter inesperado '{token}' en el inicio.")
                 return False
 
-        # Estado OPERANDO: tras una letra, número o conjunto, puede seguir un operador o llave.
+        # Estado OPERANDO: tras una letra, número o conjunto, puede seguir un operador, llave o un rango con '-'.
         elif estado == "OPERANDO":
             if token in {'*', '+'}:
                 estado = "OPERADOR_UNARIO"
@@ -85,11 +85,14 @@ def analisisSintactico(expresion_regular: str) -> bool:
             elif token == '{':
                 balance_llaves += 1
                 estado = "EN_LLAVE"
+            elif token == '-':
+                print("Error sintáctico: el guion '-' solo puede utilizarse dentro de llaves para definir un rango.")
+                return False
             elif token == '}':
                 print("Error sintáctico: llave de cierre sin apertura.")
                 return False
 
-        # Estado EN_LLAVE: espera letras, números, o un operador válido, pero no permite *, +, | al inicio o final del conjunto
+        # Estado EN_LLAVE: espera letras, números o un operador válido, y permite rangos con '-'.
         elif estado == "EN_LLAVE":
             if token == '}':
                 balance_llaves -= 1
@@ -97,10 +100,24 @@ def analisisSintactico(expresion_regular: str) -> bool:
             elif token in {'*', '+', '|'} and (i == 0 or expresion_regular[i-1] == '{'):
                 print(f"Error sintáctico: operador '{token}' en posición inválida dentro de llaves.")
                 return False
+            elif token == '-':
+                # Validación de rango dentro de llaves: el '-' debe estar rodeado de caracteres alfanuméricos.
+                if i == 0 or i == longitud - 1 or not (expresion_regular[i-1].isalnum() and expresion_regular[i+1].isalnum()):
+                    print("Error sintáctico: el guion '-' debe definir un rango entre dos caracteres dentro de llaves.")
+                    return False
+                estado = "RANGO"
             elif token.isalnum() or token in {'.', '@', ',', '(', ')'}:
                 estado = "EN_LLAVE"
             else:
                 print(f"Error sintáctico: carácter '{token}' inesperado dentro de llaves.")
+                return False
+
+        # Estado RANGO: tras un '-', debe aparecer un carácter alfanumérico para cerrar el rango.
+        elif estado == "RANGO":
+            if token.isalnum():
+                estado = "EN_LLAVE"
+            else:
+                print(f"Error sintáctico: se esperaba un carácter alfanumérico para completar el rango tras '-'.")
                 return False
 
         # Estado OPERADOR_UNARIO: después de * o +, puede continuar con otro operador o llaves
@@ -204,8 +221,20 @@ def convertir_a_regex(expresion_regular: str) -> str:
             while i < longitud and expresion_regular[i] != '}':
                 conjunto += expresion_regular[i]
                 i += 1
-            # Agrupa el conjunto sin capturarlo
-            regex += f"(?:{conjunto})"
+            
+            # Validamos y convertimos el contenido del conjunto
+            if '-' in conjunto:
+                # Detectar si es un rango en formato "a-z" o "0-9"
+                partes = conjunto.split('-')
+                if len(partes) == 2 and partes[0].isalnum() and partes[1].isalnum():
+                    # Si es un rango válido, construimos el rango en regex
+                    regex += f"[{partes[0]}-{partes[1]}]"
+                else:
+                    print(f"Error de sintaxis en el rango: {conjunto}")
+                    return ""
+            else:
+                # Si no es un rango, simplemente agrupa el conjunto
+                regex += f"(?:{conjunto})"
         elif token.isalnum() or token in {'.', '@', ',', '(', ')'}:
             # Los operandos válidos se agregan directamente
             regex += token
@@ -217,6 +246,7 @@ def convertir_a_regex(expresion_regular: str) -> str:
         i += 1
     
     return regex
+
 
 
 
