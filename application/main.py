@@ -5,14 +5,24 @@ def ejecutarCodigo():
     """
         Comenzar con la ejecucion del programa obteniendo la expresion y validandola
     """
-
     expresion_regular = leerExpresionRegular() #se obtiene la exprecion
 
-    analisisLexico(expresion_regular)#analisis lexico
+    resultado = analisisLexico(expresion_regular)#analisis lexico
 
-    print (analisisSintactico(expresion_regular))#analisis sintactico
+    #se verifica que los analisis sean validados
+    if resultado:
+        print('analisis lexico cumplido')
+        resultado = analisisSintactico(expresion_regular) #analisis sintactico
 
-    pertenece_a_expresion(expresion_regular,'holamundooooooo')
+        if resultado:
+            print('analisis sintactico cumplido')
+            pertenece_a_expresion(expresion_regular,'ab')
+        else:
+            print('analisis sintactico fallido')
+    else:
+        print('analisis lexico fallido')
+
+
 
 
 #hacer el analisis lexico a la expresion
@@ -48,7 +58,7 @@ def analisisSintactico(expresion_regular: str) -> bool:
     """
     Realizar el análisis sintáctico a la expresión, asegurando que sigue una sintaxis
     establecida mediante el uso de un autómata con las reglas especificadas, incluyendo
-    la validación de rangos con el carácter '-' dentro de llaves.
+    la validación de rangos con el carácter '-' dentro de llaves y permitiendo operadores de cerradura dentro de ellas.
     
     Parametros:
     - expresion_regular (str): La expresión regular a analizar.
@@ -92,20 +102,28 @@ def analisisSintactico(expresion_regular: str) -> bool:
                 print("Error sintáctico: llave de cierre sin apertura.")
                 return False
 
-        # Estado EN_LLAVE: espera letras, números o un operador válido, y permite rangos con '-'.
+        # Estado EN_LLAVE: permite letras, números, operadores de unión, cerraduras y rangos.
         elif estado == "EN_LLAVE":
             if token == '}':
                 balance_llaves -= 1
                 estado = "OPERANDO"
-            elif token in {'*', '+', '|'} and (i == 0 or expresion_regular[i-1] == '{'):
-                print(f"Error sintáctico: operador '{token}' en posición inválida dentro de llaves.")
-                return False
+            elif token == '|':
+                # Verifica que `|` esté entre caracteres alfanuméricos
+                if i == 0 or i == longitud - 1 or not (expresion_regular[i-1].isalnum() and expresion_regular[i+1].isalnum()):
+                    print("Error sintáctico: el operador '|' debe estar entre caracteres alfanuméricos dentro de llaves.")
+                    return False
             elif token == '-':
                 # Validación de rango dentro de llaves: el '-' debe estar rodeado de caracteres alfanuméricos.
                 if i == 0 or i == longitud - 1 or not (expresion_regular[i-1].isalnum() and expresion_regular[i+1].isalnum()):
                     print("Error sintáctico: el guion '-' debe definir un rango entre dos caracteres dentro de llaves.")
                     return False
                 estado = "RANGO"
+            elif token in {'*', '+'}:
+                # Permite `*` o `+` solo si sigue a un alfanumérico válido dentro de `{}` como una cerradura
+                if i == 0 or not expresion_regular[i-1].isalnum():
+                    print(f"Error sintáctico: operador '{token}' en posición inválida dentro de llaves.")
+                    return False
+                # Se considera parte de la cerradura y no cambia de estado
             elif token.isalnum() or token in {'.', '@', ',', '(', ')'}:
                 estado = "EN_LLAVE"
             else:
@@ -153,6 +171,8 @@ def analisisSintactico(expresion_regular: str) -> bool:
 
     print("La sintaxis es correcta.")
     return True
+
+
 
 
 
