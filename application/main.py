@@ -1,26 +1,30 @@
 import re
+import tkinter as tk
+from tkinter import messagebox
 
 #iniciar la ejecucio del codigo
+# Función para ejecutar el código principal de validación
 def ejecutarCodigo():
-    """
-        Comenzar con la ejecucion del programa obteniendo la expresion y validandola
-    """
-    expresion_regular = leerExpresionRegular() #se obtiene la exprecion
+    expresion_regular = entrada_expresion.get()  # Obtiene la expresión regular de la interfaz
+    cadena = entrada_cadena.get()  # Obtiene la cadena de la interfaz
 
-    resultado = analisisLexico(expresion_regular)#analisis lexico
+    resultado = analisisLexico(expresion_regular)  # Análisis léxico
 
-    #se verifica que los analisis sean validados
     if resultado:
-        print('analisis lexico cumplido')
-        resultado = analisisSintactico(expresion_regular) #analisis sintactico
+        print('Análisis léxico cumplido')
+        resultado = analisisSintactico(expresion_regular)  # Análisis sintáctico
 
         if resultado:
-            print('analisis sintactico cumplido')
-            pertenece_a_expresion(expresion_regular,'ab')
+            print('Análisis sintáctico cumplido')
+            pertenece = pertenece_a_expresion(expresion_regular, cadena)
+            if pertenece:
+                messagebox.showinfo("Resultado", "La cadena pertenece a la expresión regular.")
+            else:
+                messagebox.showinfo("Resultado", "La cadena NO pertenece a la expresión regular.")
         else:
-            print('analisis sintactico fallido')
+            messagebox.showerror("Error", "Análisis sintáctico fallido.")
     else:
-        print('analisis lexico fallido')
+        messagebox.showerror("Error", "Análisis léxico fallido.")
 
 
 
@@ -276,14 +280,34 @@ def leerExpresionRegular():
     """
         Solitiar al usuario una expresion regular para trabajar
     """
-    return str(input('hola, por favor digita la exprecion regular'))
+    return str(input('hola, por favor digita la exprecion regular: '))
 
 
 
+# Configuración de la interfaz gráfica
+ventana = tk.Tk()
+ventana.title("Validador de Expresiones Regulares")
+ventana.geometry("400x200")
 
+# Campo de texto para la expresión regular
+tk.Label(ventana, text="Expresión Regular:").pack()
+entrada_expresion = tk.Entry(ventana, width=50)
+entrada_expresion.pack()
+
+# Campo de texto para la cadena a validar
+tk.Label(ventana, text="Ingrese una cadena a validar:").pack()
+entrada_cadena = tk.Entry(ventana, width=50)
+entrada_cadena.pack()
+
+# Botón para iniciar la validación
+boton_validar = tk.Button(ventana, text="Validar", command=ejecutarCodigo)
+boton_validar.pack()
+
+# Iniciar la interfaz gráfica
+ventana.mainloop()
 
 
 
 #iniciar programa
-if __name__ == '__main__':
-    ejecutarCodigo()
+# if __name__ == '__main__':
+#     ejecutarCodigo()
